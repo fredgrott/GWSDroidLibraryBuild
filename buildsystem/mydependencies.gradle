@@ -506,7 +506,7 @@ ext {
 
     thirdPartyDependencies = [
 
-            realm: "io.realm:realm-android:$realVersion",
+            realm: "io.realm:realm-android:$realmVersion",
 
             //compile
             androidtransformer: "com.mobandme:android-transformer:$androidtransformerVersion",
