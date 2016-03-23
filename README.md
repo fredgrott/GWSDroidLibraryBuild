@@ -40,6 +40,37 @@ For this particular set of build scripts, just clone the github repo and modify 
 This set of build scripts and the other set that uses lombok and retrolambda are somewhat complex so
 this set-up block details the settings of all the components used in this set of build scripts.
 
+## App Signing Key
+
+The general idea is that we do not store anything of value in local.properties or the gradle.properties
+file at the user.home location. So for my demo apps of the libraries I store the demo key in the
+buildsystem folder and access via gradle build scripts.
+
+If it was a commercial app than if using a CI server I would pass everything encrypted using the
+same SSH key I use for git provider access and the CI server would load that stuff as environment system
+variables and than one would have to use gradle to read in those system environment variables to use
+in the signing block.
+
+## Espresso Instrumented Testing, System Animations
+
+Rather than the whole set of narly work-arounds to disable system animations via gradle tasks and
+some classes; i instead turn off system animations in all my test devices and emulators. It is somewhat
+easier and is guaranteed to always work.
+
+## Proguard Files
+
+The proguard-matches-android-optimize.pro file is paired with the android-optimize. proguard file.
+It still has the repackaging of a support library as we are still targeting 4.x devices with that
+Samsung OEM goofup.
+
+## Git Hash and Git Timestamp
+
+In the app module build script we use the Git Hash and Git Timestamp as buildConfigFields
+that way no matter what crash analytics packager is being used we can match up the crash
+reports to the exact git commit.
+
+
+
 # ChangeLog
 
 * March 2016, first alpha release with Jack and Jill toolchain not enabled
