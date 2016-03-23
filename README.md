@@ -35,6 +35,10 @@ to leave the at symbol and aar thing in place as it will not work without that s
 
 For this particular set of build scripts, just clone the github repo and modify for your own use.
 
+# Set-UP
+
+This set of build scripts and the other set that uses lombok and retrolambda are somewhat complex so
+this set-up block details the settings of all the components used in this set of build scripts.
 
 # ChangeLog
 
