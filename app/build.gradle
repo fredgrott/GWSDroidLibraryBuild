@@ -1,26 +1,286 @@
+/*
+ * Copyright (C) 2016 Fred Grott(aka shareme GrottWorkShop)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under License.
+ */
 apply plugin: 'com.android.application'
+// dexcount plugin to get our method counts
+apply plugin: 'com.getkeepsafe.dexcount'
+// to get build time stats
+apply plugin: 'de.hannesstruss.godot'
+// for debug logging via @DebugLog annotations
+apply plugin: 'hugo'
+// to get test code coverage of both plain unit tests and instrumented tests
+apply plugin: 'jacoco-everywhere'
+// felix' spoon gradle plugin which includes a more up to date spoon runner version
+apply plugin: 'de.felixschulze.gradle.spoon'
+// to version the artifacts
+apply plugin: 'org.moallemi.advanced-build-version'
+apply plugin: 'view-inspector'
 
-android {
-    compileSdkVersion 23
-    buildToolsVersion "24.0.0 rc2"
-
-    defaultConfig {
-        applicationId "com.github.shareme.gwsdroidlibrarybuild"
-        minSdkVersion 16
-        targetSdkVersion 23
-        versionCode 1
-        versionName "1.0"
+advancedVersioning {
+    nameOptions {
+        versionMajor 1
+        versionBuild 0
     }
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
+    codeOptions {
+        versionCodeType org.moallemi.gradle.internal.VersionCodeType.DATE
+
+        dependsOnTasks 'release'
+
+    }
+    //if flavors than re use nameFormat to include the flavorName
+    outputOptions {
+        renameOutput true
+        nameFormat '$projectName-$appName-$buildType-$flavorName-$versionName-$versionCode'
+
     }
 }
 
+def appVersionName = advancedVersioning.versionName
+def appVersionCode = advancedVersioning.versionCode
+
+/*
+ We define some buildConfigField defs here to use
+ */
+def BOOLEAN = "boolean"
+def TRUE = "true"
+def FALSE = "false"
+def STRING = "String"
+def LONG = "Long"
+def LOG_HTTP_REQUESTS = "LOG_HTTP_REQUESTS"
+def REPORT_CRASHES = "REPORT_CRASHES"
+def ENABLE_VIEW_SERVER = "ENABLE_VIEW_SERVER"
+def ENABLE_SHARING = "ENABLE_SHARING"
+def GIT_HASH = "GIT_HASH"
+def GIT_TIME = "GIT_TIME"
+
+
+
+
+android {
+    def globalConfiguration = rootProject.extensions.getByName("ext")
+
+    compileSdkVersion globalConfiguration.getAt("androidCompileSdkVersion")
+    buildToolsVersion globalConfiguration.getAt("androidBuildToolsVersion")
+
+
+
+    defaultConfig {
+        applicationId "com.github.shareme.gwsdroidlibrarybuild"
+        minSdkVersion globalConfiguration.getAt("androidMinSdkVersion")
+        targetSdkVersion globalConfiguration.getAt("androidTargetSdkVersion")
+        //noinspection GroovyAssignabilityCheck
+        versionCode appVersionCode
+        //noinspection GroovyAssignabilityCheck
+        versionName appVersionName
+        testInstrumentationRunner globalConfiguration.getAt("testInstrumentationRunner")
+        testApplicationId "com.github.shareme.gwsdroidlibrarybuild.test"
+    }
+
+    /*
+     Warning, multi-catch is not until android 4.4.2
+     */
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
+
+    packagingOptions {
+        exclude 'LICENSE.txt'
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/ASL2.0'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/LICENSE'
+    }
+
+    lintOptions {
+        quiet true
+        abortOnError false
+        ignoreWarnings true
+        xmlReport false
+        htmlReport true
+        lintConfig file("${project.rootDir}/config/quality/androidlint/lint.xml")
+        htmlOutput file("${project.buildDir}/reports/lint/lint-results.html")
+        xmlOutput file("${rootProject.buildDir}/reports/lint/lint-results.xml")
+        disable 'InvalidPackage'            //Some libraries have issues with this.
+        disable 'OldTargetApi'              //Lint gives this warning but SDK 20 would be Android L Beta.
+        disable 'IconDensities'             //For testing purpose. This is safe to remove.
+        disable 'IconMissingDensityFolder'  //For testing purpose. This is safe to remove.
+    }
+
+    aaptOptions {
+        noCompress 'txt'
+        ignoreAssetsPattern "!.svn:!.git:!.ds_store:!*.scc:.*:<dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"
+    }
+
+    signingConfigs {
+
+        //release {
+        //props stored in gradle.properties at userhome .gradle subfolder
+        // for product release and you just substitute the correct vars
+        // otherwise for demo of libs use what is listed
+
+        //storeFile file(FREDGROTT_RELEASE_STORE_FILE)
+        //storePassword FREDGROTT_RELEASE_STORE_PASSWORD
+        //keyAlias FREDGROTT_RELEASE_KEY_ALIAS
+        //keyPassword FREDGROTT_RELEASE_KEY_PASSWORD
+
+        // }
+
+        myDemo{
+            storeFile file('../buildsystem/demokey.jks')
+            storePassword 'droiddroid'
+            keyAlias 'dkey'
+            keyPassword 'droiddroid'
+        }
+
+    }
+
+
+    buildTypes {
+
+        debug {
+            // Run code coverage reports by default on debug builds.
+            debuggable true
+            minifyEnabled false
+            testCoverageEnabled true
+            applicationIdSuffix '.dev'
+            versionNameSuffix '-dev'
+
+            buildConfigField BOOLEAN, LOG_HTTP_REQUESTS, TRUE
+            buildConfigField BOOLEAN, REPORT_CRASHES, FALSE
+            buildConfigField BOOLEAN, ENABLE_VIEW_SERVER, TRUE
+            buildConfigField BOOLEAN, ENABLE_SHARING, TRUE
+            buildConfigField STRING, GIT_HASH, rootProject.ext.gitSha
+            buildConfigField LONG, GIT_TIME, rootProject.ext.gitDate
+
+
+
+        }
+
+
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'proguard-matches-android-optimize.pro'
+            //if its app demo of library than it gets
+            //signingConfig signingConfigs.myDemo
+            //other wise it gets an uncommented signingConfigs.release
+            //with the right product key pertaining to whether its on the Ci server or not
+            //noinspection GroovyAssignabilityCheck
+            signingConfig signingConfigs.myDemo
+            applicationIdSuffix '.release'
+            versionNameSuffix '-release'
+
+            buildConfigField BOOLEAN, LOG_HTTP_REQUESTS, FALSE
+            buildConfigField BOOLEAN, REPORT_CRASHES, TRUE
+            buildConfigField BOOLEAN, ENABLE_VIEW_SERVER, FALSE
+            buildConfigField BOOLEAN, ENABLE_SHARING, FALSE
+            buildConfigField STRING, GIT_HASH, rootProject.ext.gitSha
+            buildConfigField LONG, GIT_TIME, rootProject.ext.gitDate
+
+
+
+
+        }
+    }
+    // Always show the result of every unit test, even if it passes.
+    testOptions{
+        reportDir = "$rootProject.ext.ourReportsDir/androidTests"
+
+        unitTests.all {
+            testLogging {
+                events 'passed', 'skipped', 'failed', 'standardOut', 'standardError'
+                // to show it in the console
+                outputs.upToDateWhen { false }
+                showStandardStreams = true
+            }
+        }
+    }
+
+}
+
+spoon {
+    failOnFailure = false
+    teamCityLog = false
+    //noAnimations = true
+}
+dexcount {
+    includeClasses = false
+    includeFieldCount = true
+    //includeTotalMethodCount = false
+    //printAsTree = false
+    orderByMethodCount = false
+    verbose = false
+}
+
+viewInspector {
+    excludePackages = ['android.widget.Space', 'com.squareup.leakcanary.internal']
+}
+
+// espresso has a support annotation dep that is usually out of synch
+// with rest of the support libs, thus we force resolve to the
+// more up-to-date one
+//noinspection GroovyAssignabilityCheck
+configurations.all{
+    resolutionStrategy.force 'com.android.support:support-annotations:23.2.1'
+
+}
+
+
+
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:23.2.1'
+    //noinspection GroovyAssignabilityCheck
+    testCompile rootProject.ext.tddDependencies.junit
+    //noinspection GroovyAssignabilityCheck
+    testCompile rootProject.ext.tddDependencies.mockito
+    //noinspection GroovyAssignabilityCheck
+    testCompile rootProject.ext.tddDependencies.powermockJunit
+    //noinspection GroovyAssignabilityCheck
+    testCompile rootProject.ext.tddDependencies.powermockMockito
+    //noinspection GroovyAssignabilityCheck
+    testCompile rootProject.ext.tddDependencies.truth
+    //noinspection GroovyAssignabilityCheck
+    androidTestCompile rootProject.ext.androidSupportTestDependencies.espressoRunner
+    //noinspection GroovyAssignabilityCheck
+    androidTestCompile rootProject.ext.androidSupportTestDependencies.espressoRules
+    //noinspection GroovyAssignabilityCheck
+    androidTestCompile rootProject.ext.androidSupportTestDependencies.espressoCore
+    androidTestCompile (rootProject.ext.androidSupportTestDependencies.espressoContrib){
+        exclude module: 'recyclerview-v7'
+        exclude module: 'support-v4'
+        exclude module: 'design'
+
+    }
+    androidTestCompile (rootProject.ext.instrumentedDependencies.assertjAndroid){
+        exclude group: 'com.android.support'
+    }
+    //noinspection GroovyAssignabilityCheck
+    compile rootProject.ext.androidSupportDependencies.appCompat
+    androidTestCompile (rootProject.ext.instrumentedDependencies.assertjAppCompat){
+        exclude group: 'com.android.support'
+
+    }
+    //noinspection GroovyAssignabilityCheck
+    compile rootProject.ext.logDependencies.timber
+    //noinspection GroovyAssignabilityCheck
+    compile rootProject.ext.eventbusDependencies.otto
+    //noinspection GroovyAssignabilityCheck
+    compile rootProject.ext.appDebugDependencies.leakCanaryReleaseCompile
+
+    //noinspection GroovyAssignabilityCheck
+    debugCompile rootProject.ext.appDebugDependencies.leakCanaryDebugCompile
+
+    //noinspection GroovyAssignabilityCheck
+    debugCompile rootProject.ext.appDebugDependencies.gwsdroidviewserver
+
+
 }

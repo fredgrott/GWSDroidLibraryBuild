@@ -404,48 +404,7 @@ ext {
 
     ]
 
-    /*
-       RXJava is the React Native for java libraries and the Android specific RxJava libraries
 
-       RxJava Core React Native
-       RxAndroid Android RxJava specific core
-       RxBinding is the binding to view library
-       RxLifecycle is the Android lifecycle rxJava library
-       SQLBrite RxJava for Android SQLite
-       ReactiveLocation RxJava library for Android Location
-       RxPreferences RxJava library for Android Preferences
-       RxFit RxJava library for Android Fitness
-      */
-    rxVersion = '1.1.1'
-    rxAndroidVersion = '1.1.0'
-    rxbindingVersion = '0.4.0'
-    rxlifecycleVersion = '0.3.0'
-    reactivelocationVersion = '0.8'
-    rxpreferencesVersion = '1.0.0'
-
-    rxDependencies = [
-            rxandroid:"io.reactivex:rxandroid:$rxAndroidVersion",
-            rxjava:"io.reactivex:rxjava:$rxVersion",
-            rxbinding:"com.jakewharton.rxbinding:rxbinding:$rxbindingVersion",
-            rxbindingSuportfour:"com.jakewharton.rxbinding:rxbinding-support-v4:$rxbindingVersion",
-            rxbindingAppCompat:"com.jakewharton.rxbinding:rxbinding-appcompatt-v7:$rxbindingVersion",
-            rxbindingDesign:"com.jakewharton.rxbinding:rxbinding-design:$rxbindingVersion",
-            rxbindingrecycler:"com.jakewharton.rxbinding:rxbinding-recyclerview-v7:$rxbindingVersion",
-            rxlifecycle:"com.trello:rxlifecycle:$rxlifecycleVersion",
-            rxlifecycleComponents:"com.trello:rxlifecycle-components:$rxlifecycleVersion",
-
-            reactivelocation:"pl.charmas.android:android-reactivve-location:$reactivelocationVersion@aar",
-            rxpreferences:"com.f2prateek.rx.preferences:rx-preferences:$rxpreferencesVersion"
-
-    ]
-
-
-    //sqlite wrapper
-    sqlbriteversion = '0.4.0'
-
-    sqlitewrapperDependencies = [
-            sqlbrite:"com.squareup.sqlbrite:sqlbrite:$sqlbriteversion"
-    ]
 
     /*
        3rd Party Libs
